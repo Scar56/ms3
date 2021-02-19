@@ -1,3 +1,4 @@
+
 import java.io.*;
 import java.sql.*;
 import java.util.concurrent.ExecutorService;
@@ -34,7 +35,7 @@ public class CsvParser
             fileName = args[0].substring(0, args[0].lastIndexOf('.'));
             String line;
 
-            //delete old bad-records file if it exists
+            //delete old bad-records and log file if they exists
             try
             {
                 File badRecords = new File(fileName + "-bad.csv");
@@ -45,12 +46,18 @@ public class CsvParser
                 {
                     System.out.println("Write access denied");
                 }
+                File log = new File(fileName + ".log");
+                try
+                {
+                    log.delete();
+                } catch (Exception e)
+                {
+                    System.out.println("Write access denied");
+                }
             } catch (Exception e)
             {
                 //no file to delete, do nothing
             }
-
-            //create output db, clear it if the file exists
             try
             {
                 // create a database connection
@@ -103,11 +110,10 @@ public class CsvParser
             if (inputFile != null)
                 inputFile.close();
             pool.shutdown();
-            //wait for threads to finish
             while (!pool.awaitTermination(2, TimeUnit.SECONDS)) ;
         }
 
-        //count successful records
+
         try
         {
             connection = DriverManager.getConnection("jdbc:sqlite:" + fileName + ".db");
@@ -133,12 +139,10 @@ public class CsvParser
             catch (SQLException e)
             {
                 // connection close failed.
-                System.out.println("Failed to read output db");
                 System.err.println(e.getMessage());
             }
         }
 
-        //count unsuccessful records
         try
         {
             br = new BufferedReader(new FileReader(fileName + "-bad.csv"));
@@ -149,7 +153,6 @@ public class CsvParser
         }
         catch (IOException e)
         {
-            System.out.println("unable to read  -bad.csv");
             e.printStackTrace();
         }
         finally
@@ -158,7 +161,6 @@ public class CsvParser
                 br.close();
         }
 
-        //write to log file
         try
         {
             bw = new BufferedWriter(
@@ -171,7 +173,6 @@ public class CsvParser
         }
         catch (IOException e)
         {
-            System.out.println("unable to create log file");
             e.printStackTrace();
         }
         finally
