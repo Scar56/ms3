@@ -24,6 +24,7 @@ public class CsvParser
         if (args.length != 1)
         {
             System.out.println("Usage: java -jar ms3-1.0-jar-with-dependencies.jar {path to input file}");
+            return;
         }
         try
         {
