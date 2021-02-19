@@ -108,7 +108,7 @@ public class LineReader extends Thread
             try
             {
                 BufferedWriter bw = new BufferedWriter(new FileWriter(fileName + "-bad.csv", true));
-                bw.write(line + "\n");
+                bw.write(line + System.lineSeparator());
                 bw.flush();
             } catch (IOException e)
             {
