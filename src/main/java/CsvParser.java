@@ -1,3 +1,4 @@
+
 import java.io.*;
 import java.sql.*;
 import java.util.concurrent.ExecutorService;
@@ -8,7 +9,6 @@ public class CsvParser
 {
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException
     {
-
         int recordsProcessed = 0;
         String tablename = "";
         String fileName = "";
@@ -29,6 +29,22 @@ public class CsvParser
             tablename = tablename.substring(0, tablename.lastIndexOf('.'));
             fileName = args[0].substring(0, args[0].lastIndexOf('.'));
             String line;
+
+            //delete old bad-records file if it exists
+            try
+            {
+                File badRecords = new File(fileName + "-bad.csv");
+                try
+                {
+                    badRecords.delete();
+                } catch (Exception e)
+                {
+                    System.out.println("Write access denied");
+                }
+            } catch (Exception e)
+            {
+                //no file to delete, do nothing
+            }
             try
             {
                 // create a database connection
