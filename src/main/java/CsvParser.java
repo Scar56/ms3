@@ -10,23 +10,28 @@ public class CsvParser
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException
     {
         int recordsProcessed = 0;
-        String tablename = "";
+        int successful = 0;
+        int unsuccessful = 0;
+        String tableName = "";
         String fileName = "";
         Connection connection = null;
         int numCPU = Runtime.getRuntime().availableProcessors();
         ExecutorService pool = Executors.newFixedThreadPool(numCPU);
+        BufferedReader inputFile = null;
+        BufferedReader br = null;
+        BufferedWriter bw = null;
+
         if (args.length != 1)
         {
-            System.out.println("Usage: \"path to cvs file\"");
+            System.out.println("Usage: java -jar ms3-1.0-jar-with-dependencies.jar {path to input file}");
         }
-        BufferedReader csvFile;
         try
         {
             File file = new File(args[0]);
 
-            csvFile = new BufferedReader(new FileReader(args[0]));
-            tablename = file.getName();
-            tablename = tablename.substring(0, tablename.lastIndexOf('.'));
+            inputFile = new BufferedReader(new FileReader(args[0]));
+            tableName = file.getName();
+            tableName = tableName.substring(0, tableName.lastIndexOf('.'));
             fileName = args[0].substring(0, args[0].lastIndexOf('.'));
             String line;
 
@@ -52,86 +57,120 @@ public class CsvParser
                 Statement statement = connection.createStatement();
                 statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
-                statement.executeUpdate("drop table if exists " + tablename);
-                statement.executeUpdate("create table " + tablename + " (A string, B string, C string, D string, E string, F string, G string, H string, I string, J string)");
+                statement.executeUpdate("drop table if exists " + tableName);
+                statement.executeUpdate("create table " + tableName + " (A string, B string, C string, D string, E string, F string, G string, H string, I string, J string)");
 
-            } catch (SQLException e)
+            }
+            catch (SQLException e)
             {
+                System.out.println("Cant create database, exiting");
                 System.err.println(e.getMessage());
                 return;
-            } finally
+            }
+            finally
             {
                 try
                 {
                     if (connection != null)
                         connection.close();
-                } catch (SQLException e)
+                }
+                catch (SQLException e)
                 {
                     // connection close failed.
                     System.err.println(e.getMessage());
                 }
             }
-            line = csvFile.readLine();
+
+            //skip the first line, its just column names
+            inputFile.readLine();
 
             //parse each line in a new thread
-            while ((line = csvFile.readLine()) != null)
+            while ((line = inputFile.readLine()) != null)
             {
-                Runnable lineReader = new LineReader(line, fileName, tablename);
+                Runnable lineReader = new LineReader(line, fileName, tableName);
                 pool.execute(lineReader);
                 recordsProcessed++;
             }
-            csvFile.close();
 
-        } catch (IOException e)
+        }
+        catch (IOException e)
         {
             System.out.println("Invalid file path");
-        } finally
+        }
+        finally
         {
+            if (inputFile != null)
+                inputFile.close();
             pool.shutdown();
             while (!pool.awaitTermination(2, TimeUnit.SECONDS)) ;
         }
-        int successful = 0;
-        int unsuccessful = 0;
 
 
         try
         {
-            // create a database connection
             connection = DriverManager.getConnection("jdbc:sqlite:" + fileName + ".db");
             Statement statement = connection.createStatement();
             statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
-            ResultSet rs = statement.executeQuery("select Count(*) as count from " + tablename);
+            ResultSet rs = statement.executeQuery("select Count(*) as count from " + tableName);
 
             successful = rs.getInt("count");
-        } catch (SQLException e)
+        }
+        catch (SQLException e)
         {
             System.err.println(e.getMessage());
             return;
-        } finally
+        }
+        finally
         {
             try
             {
                 if (connection != null)
                     connection.close();
-            } catch (SQLException e)
+            }
+            catch (SQLException e)
             {
                 // connection close failed.
                 System.err.println(e.getMessage());
             }
         }
+
         try
         {
-            BufferedReader br = new BufferedReader(new FileReader(fileName + "-bad.csv"));
+            br = new BufferedReader(new FileReader(fileName + "-bad.csv"));
             while (br.readLine() != null)
             {
                 unsuccessful++;
             }
-            System.out.println("suc= " + successful);
-            System.out.println("un= " + unsuccessful);
-        } catch (IOException e)
+        }
+        catch (IOException e)
         {
             e.printStackTrace();
+        }
+        finally
+        {
+            if(br != null)
+                br.close();
+        }
+
+        try
+        {
+            bw = new BufferedWriter(
+                    new FileWriter(fileName + ".log", true));
+            bw.write("# of Records: " + recordsProcessed + System.lineSeparator());
+            bw.write("# of Records Successful: " + successful + System.lineSeparator());
+            bw.write("# of Records Failed: " + unsuccessful + System.lineSeparator());
+            bw.flush();
+            bw.close();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            if(bw != null)
+                bw.close();
         }
     }
 }
