@@ -32,6 +32,7 @@ public class LineReader extends Thread
         String lineTmp = line;
         String[] values = new String[10];
 
+        try{
         //extract items from row
         for (int i = 0; i < 10; i++)
         {
@@ -54,6 +55,8 @@ public class LineReader extends Thread
                 valid = false;
                 break;
             }
+        }}catch(Exception e){
+            valid = false;
         }
         //check for extra columns
         if (valid)
