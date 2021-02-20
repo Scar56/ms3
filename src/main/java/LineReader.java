@@ -32,30 +32,33 @@ public class LineReader extends Thread
         String lineTmp = line;
         String[] values = new String[10];
 
-        try{
-        //extract items from row
-        for (int i = 0; i < 10; i++)
+        try
         {
-            //handle image in column E
-            if (i == 4 && lineTmp.contains("\""))
+            //extract items from row
+            for (int i = 0; i < 10; i++)
             {
-                values[i] = lineTmp.substring(0, lineTmp.indexOf("\",") + 1);
-                lineTmp = lineTmp.substring(lineTmp.indexOf("\",") + 2);
+                //handle image in column E
+                if (i == 4 && lineTmp.contains("\""))
+                {
+                    values[i] = lineTmp.substring(0, lineTmp.indexOf("\",") + 1);
+                    lineTmp = lineTmp.substring(lineTmp.indexOf("\",") + 2);
 
-            } else
-            {
-                values[i] = lineTmp.substring(0, lineTmp.indexOf(','));
-                lineTmp = lineTmp.substring(lineTmp.indexOf(',') + 1);
+                } else
+                {
+                    values[i] = lineTmp.substring(0, lineTmp.indexOf(','));
+                    lineTmp = lineTmp.substring(lineTmp.indexOf(',') + 1);
 
+                }
+
+                //check that data exists
+                if (values[i].isEmpty())
+                {
+                    valid = false;
+                    break;
+                }
             }
-
-            //check that data exists
-            if (values[i].isEmpty())
-            {
-                valid = false;
-                break;
-            }
-        }}catch(Exception e){
+        } catch (Exception e)
+        {
             valid = false;
         }
         //check for extra columns
@@ -75,6 +78,7 @@ public class LineReader extends Thread
 
     /**
      * insert the row into the db
+     *
      * @param values the parsed values from the 10 columns
      */
     private void insertSQL(String[] values)
